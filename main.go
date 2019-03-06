@@ -1,10 +1,10 @@
 package main
 
 // TODO:
-// * allow only one tcp/udp port
 // * tests and refactoring
 // * better logging
-// * check is there connections leak
+// * check is there any connections leaks
+//
 // MAYBE:
 // timeouts
 
@@ -21,6 +21,9 @@ func main() {
 	cfg := configure()
 	// fmt.Printf("%#v\n", cfg)
 	// return
+	if !cfg.showEnv {
+		dumpEnv = func() string { return "" }
+	}
 
 	var servers []Server
 	for _, addr := range cfg.tcpAddrs {
@@ -53,7 +56,7 @@ func envname(s string) string {
 	return strings.SplitN(s, "=", 1)[0]
 }
 
-func dumpEnv() string {
+var dumpEnv = func() string {
 	envs := os.Environ()
 	sort.SliceStable(envs, func(i, j int) bool {
 		return envname(envs[i]) < envname(envs[j])

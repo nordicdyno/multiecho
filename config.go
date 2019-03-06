@@ -31,6 +31,8 @@ func (i *arrayFlags) Set(value string) error {
 type config struct {
 	tcpAddrs []string
 	udpAddrs []string
+	showEnv  bool
+	verbose  bool
 }
 
 // var Usage = func() {
@@ -61,11 +63,15 @@ func configure() config {
 		tcpAddr arrayFlags
 		udpAddr arrayFlags
 	)
-	flagHost := flag.String("bind", "0.0.0.0", "default bind address (used if not provided with port)")
+	flagHost := flag.String("bind", "0.0.0.0",
+		"default bind address (used if not provided with port)")
 	flag.Var(&tcpAddr, "t",
 		"tcp bind ports/addresses in ADDR:PORT format, there ADDR is optional (could be used multiple times)")
 	flag.Var(&udpAddr, "u",
 		"udp bind ports/addresses in ADDR:PORT format, there ADDR is optional (could be used multiple times)")
+
+	// verbose := flag.Bool("verbose", false, "verbose logs")
+	showEnv := flag.Bool("env", false, "print all environment variables to all new connection")
 	flag.Parse()
 
 	host := os.Getenv(defaultHostEnvName)
@@ -76,9 +82,10 @@ func configure() config {
 	cfg := config{
 		tcpAddrs: addrs(tcpPortsEnvName, host, tcpAddr),
 		udpAddrs: addrs(udpPortsEnvName, host, udpAddr),
+		showEnv:  *showEnv,
 	}
 	if len(cfg.tcpAddrs) == 0 && len(cfg.udpAddrs) == 0 {
-		fmt.Fprintln(os.Stderr, "Error: at least one port should be used\n")
+		fmt.Fprintf(os.Stderr, "Error: at least one port should be used\n\n")
 		flag.Usage()
 		os.Exit(1)
 	}
