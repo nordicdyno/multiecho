@@ -119,11 +119,11 @@ func (srv *UDPServer) write(addr *net.UDPAddr, payload []byte) {
 }
 
 func (srv *UDPServer) Stop() {
-	fmt.Println("Stop listening on", srv.address)
+	fmt.Println("...UDP stopping listening on", srv.address)
 	// XXX: You cannot use the same channel in two directions.
 	//      The order of operations on the channel is undefined.
 	close(srv.quit)
-	fmt.Println("wait on exit chan")
+	// fmt.Println("wait on exit chan")
 	<-srv.exited
-	fmt.Println("Stopped successfully")
+	fmt.Println("UDP server stopped successfully")
 }

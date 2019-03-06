@@ -109,11 +109,11 @@ func (srv *TCPServer) handleTCPRequest(conn net.Conn, id int) {
 }
 
 func (srv *TCPServer) Stop() {
-	fmt.Println("...stopping listening on", srv.address)
+	fmt.Println("...TCP stopping listening on", srv.address)
 	// XXX: You cannot use the same channel in two directions.
 	//      The order of operations on the channel is undefined.
 	close(srv.quit)
 	// fmt.Println("wait on exit chan")
 	<-srv.exited
-	fmt.Println("Stopped successfully on", srv.address)
+	fmt.Println("TCP server stopped successfully on", srv.address)
 }
