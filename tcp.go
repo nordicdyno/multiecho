@@ -70,11 +70,10 @@ func (srv *TCPServer) serve() {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
 			}
-			if atomic.LoadInt32(&stopped) == 1 {
-				return
+			if atomic.LoadInt32(&stopped) != 1 {
+				// TODO: check is in closing state
+				fmt.Println("Failed to accept connection:", err.Error())
 			}
-			// TODO: check is in closing state
-			fmt.Println("Failed to accept connection:", err.Error())
 			return
 		}
 		handlers.Add(1)
@@ -94,26 +93,46 @@ func (srv *TCPServer) handleTCPRequest(conn net.Conn, id int) {
 
 	conn.Write([]byte(srv.message))
 
+	in := make(chan []byte)
+	stop := make(chan bool)
+	go func() {
+		defer func() {
+			close(stop)
+		}()
+		for {
+			buf := make([]byte, 1024)
+			size, err := conn.Read(buf)
+			if err != nil {
+				if opErr, ok := err.(*net.OpError); ok {
+					if opErr.Temporary() {
+						errorf("TCP Read temporary error: type=%T: %v", err, err)
+						continue
+					}
+					return
+				}
+				errorf("TCP Read error: type=%T: %v", err, err)
+				return
+			}
+			in <- buf[:size]
+		}
+	}()
+
 	for {
-		buf := make([]byte, 1024)
-		size, err := conn.Read(buf)
-		if err != nil {
+		select {
+		case data := <-in:
+			conn.Write(data)
+		case <-srv.quit:
+			conn.Close()
+		// TODO: activate timer after close
+		case <-stop:
 			return
 		}
-		data := buf[:size]
-
-		// log.Println(clientId+" - Received Raw Data:", data)
-		// log.Printf(clientId+" - Received Data (converted to string): %s", data)
-		conn.Write(data)
 	}
 }
 
 func (srv *TCPServer) Stop() {
 	fmt.Println("...TCP stopping listening on", srv.address)
-	// XXX: You cannot use the same channel in two directions.
-	//      The order of operations on the channel is undefined.
 	close(srv.quit)
-	// fmt.Println("wait on exit chan")
 	<-srv.exited
 	fmt.Println("TCP server stopped successfully on", srv.address)
 }

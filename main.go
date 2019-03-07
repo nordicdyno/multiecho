@@ -73,6 +73,11 @@ var dumpEnv = func() string {
 }
 
 func fatalerror(format string, a ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, format, a...)
+	errorf(format, a...)
 	os.Exit(1)
+}
+
+func errorf(format string, a ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, format, a...)
+	fmt.Fprintln(os.Stderr, "")
 }
